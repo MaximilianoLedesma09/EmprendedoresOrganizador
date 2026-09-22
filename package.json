@@ -1,0 +1,16 @@
+{
+  "name": "organizador-emprendedores",
+  "version": "0.1.0",
+  "description": "PWA para gestión de emprendedores",
+  "scripts": {
+    "start": "npx serve public -l 3000",
+    "build": "echo 'No build process yet'"
+  },
+  "devDependencies": {
+    "serve": "^14.2.0"
+  },
+  "dependencies": {
+    "date-fns": "^4.4.0",
+    "firebase": "^12.18.0"
+  }
+}

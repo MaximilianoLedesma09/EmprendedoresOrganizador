@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Mi Organizador</title>
+  <!-- Preconexión a Firebase -->
+  <link rel="preconnect" href="https://firestore.googleapis.com" />
+  <link rel="preconnect" href="https://storage.googleapis.com" />
+  <!-- Manifest PWA -->
+  <link rel="manifest" href="/manifest.json" />
+  <!-- Iconos (puedes poner un favicon.ico) -->
+  <link rel="icon" href="/icons/favicon.ico" />
+  <!-- Estilos base (mínimos) -->
+  <link rel="stylesheet" href="/styles/style.css" />
+</head>
+<body>
+  <div id="app"></div>
+  <!-- Cargamos el punto de entrada como módulo -->
+  <script type="importmap">
+    {
+      "imports": {
+        "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+        "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js",
+        "firebase/storage": "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js",
+        "date-fns": "https://cdn.jsdelivr.net/npm/date-fns@2.30.0/index.js",
+        "date-fns/": "https://cdn.jsdelivr.net/npm/date-fns@2.30.0/"
+      }
+    }
+  </script>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
