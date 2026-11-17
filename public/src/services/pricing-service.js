@@ -12,6 +12,7 @@ import {
   query,
   orderBy
 } from 'firebase/firestore';
+import { validatePriceAmount } from '../utils/validators.js';
 
 // -------- Configuración del negocio --------
 
@@ -94,16 +95,93 @@ export const deleteProduct = async (id) => {
   await deleteDoc(docRef);
 };
 
-// -------- Cálculos --------
+// -------- Configuración de precios --------
 
-// Calcular precio de venta sugerido a partir del costo y margen (%)
-export const calcSuggestedPrice = (cost, marginPercent) => {
-  const c = Number(cost) || 0;
-  const m = Number(marginPercent) || 0;
-  return +(c * (1 + m / 100)).toFixed(2);
+// Valores predeterminados del cálculo de precio sugerido.
+// Se define como objeto de configuración para poder modificarlo sin
+// cambiar la firma de la función.
+export const PRICING_DEFAULT = {
+  multiplier: 2.30,
+  threshold: 7000,
+  fixedAdditionBelow: 1000,
+  fixedAdditionAbove: 1500,
 };
 
-// Calcular margen real (%) a partir de costo y precio de venta
+// Calcular precio sugerido comercial aplicando la fórmula aprobada.
+//
+// costoBase <= 7000:
+//   precioSugerido = costoBase * 2.30 + 1000
+//
+// costoBase > 7000:
+//   precioSugerido = costoBase * 2.30 + 1500
+export const calcSuggestedPriceCommercial = (costBase) => {
+  const validationError = validatePriceAmount(costBase, 'costo base');
+
+  if (validationError) {
+    throw new Error(validationError);
+  }
+
+  const cost = Number(costBase);
+
+  const multiplier = PRICING_DEFAULT.multiplier;
+  const threshold = PRICING_DEFAULT.threshold;
+  const fixedAdditionBelow = PRICING_DEFAULT.fixedAdditionBelow;
+  const fixedAdditionAbove = PRICING_DEFAULT.fixedAdditionAbove;
+
+  const intermediateValue = cost * multiplier;
+
+  const fixedAddition =
+    cost > threshold ? fixedAdditionAbove : fixedAdditionBelow;
+
+  const suggestedPrice = intermediateValue + fixedAddition;
+
+  // Redondeo final al centavo, preservando la fórmula exacta.
+  return Math.round(suggestedPrice * 100) / 100;
+};
+
+// Devuelve el desglose del cálculo del precio sugerido.
+//
+// Esta información puede usarse en la vista para mostrar el desglose
+// sin duplicar la fórmula.
+export const calcSuggestedPriceBreakdown = (costBase) => {
+  const validationError = validatePriceAmount(costBase, 'costo base');
+
+  if (validationError) {
+    throw new Error(validationError);
+  }
+
+  const cost = Number(costBase);
+
+  const multiplier = PRICING_DEFAULT.multiplier;
+  const threshold = PRICING_DEFAULT.threshold;
+  const fixedAdditionBelow = PRICING_DEFAULT.fixedAdditionBelow;
+  const fixedAdditionAbove = PRICING_DEFAULT.fixedAdditionAbove;
+
+  const intermediateValue = cost * multiplier;
+
+  const fixedAddition =
+    cost > threshold ? fixedAdditionAbove : fixedAdditionBelow;
+
+  const suggestedPrice = intermediateValue + fixedAddition;
+
+  return {
+    costBase: cost,
+    multiplier: multiplier,
+    threshold,
+    fixedAdditionApplied: fixedAddition,
+    intermediateValue,
+    suggestedPrice: Math.round(suggestedPrice * 100) / 100,
+    formulaLabel:
+      cost > threshold
+        ? 'costo > 7000 ? costo * 2.30 + 1500'
+        : 'costo <= 7000 ? costo * 2.30 + 1000',
+  };
+};
+
+// Calcular margen real (%) a partir de costo y precio de venta.
+//
+// Esta función NO debe cambiarse por la centralización del precio
+// sugerido. Se mantiene con el mismo significado original.
 export const calcMargin = (cost, salePrice) => {
   const c = Number(cost) || 0;
   const s = Number(salePrice) || 0;
@@ -111,7 +189,10 @@ export const calcMargin = (cost, salePrice) => {
   return +(((s - c) / s) * 100).toFixed(2);
 };
 
-// Calcular ganancia (precio - costo)
+// Calcular ganancia (precio - costo).
+//
+// Esta función NO debe cambiarse por la centralización del precio
+// sugerido. Se mantiene con el mismo significado original.
 export const calcProfit = (cost, salePrice) => {
   return +((Number(salePrice) || 0) - (Number(cost) || 0)).toFixed(2);
 };

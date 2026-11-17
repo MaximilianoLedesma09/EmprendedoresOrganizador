@@ -6,11 +6,12 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
-  calcSuggestedPrice,
+  calcSuggestedPriceCommercial,
   calcMargin,
   calcProfit,
   formatCurrency
 } from '../services/pricing-service.js';
+import { validatePriceAmount } from '../utils/validators.js';
 
 export default async function pricesView() {
   const container = document.createElement('div');
@@ -130,7 +131,12 @@ export default async function pricesView() {
     `;
 
     products.forEach(p => {
-      const suggested = calcSuggestedPrice(p.unitCost, p.margin ?? config.defaultMargin);
+      let suggested = 0;
+      try {
+        suggested = calcSuggestedPriceCommercial(p.unitCost);
+      } catch (error) {
+        suggested = 0;
+      }
       const profit = calcProfit(p.unitCost, p.salePrice || suggested);
       const marginReal = calcMargin(p.unitCost, p.salePrice || suggested);
       const typeLabel = p.type === 'raw' ? 'Insumo' : (p.type === 'final' ? 'Producto final' : 'Producto');
@@ -247,18 +253,19 @@ export default async function pricesView() {
 
     // Vista previa del precio sugerido
     const costInput = modal.querySelector('#p-cost');
-    const marginInput = modal.querySelector('#p-margin');
     const preview = modal.querySelector('#suggested-preview');
 
     const updatePreview = () => {
-      const c = Number(costInput.value) || 0;
-      const m = Number(marginInput.value) || 0;
-      const suggested = calcSuggestedPrice(c, m);
-      preview.textContent = `💡 Precio sugerido: ${formatCurrency(suggested, config.currency)} · Ganancia: ${formatCurrency(suggested - c, config.currency)}`;
+      const c = Number(costInput.value);
+      try {
+        const suggested = calcSuggestedPriceCommercial(c);
+        preview.textContent = `💡 Precio sugerido: ${formatCurrency(suggested, config.currency)}`;
+      } catch (error) {
+        preview.textContent = `⚠️ ${error.message}`;
+      }
     };
     updatePreview();
     costInput.addEventListener('input', updatePreview);
-    marginInput.addEventListener('input', updatePreview);
 
     // Submit
     modal.querySelector('#product-form').addEventListener('submit', async (e) => {
@@ -278,9 +285,13 @@ export default async function pricesView() {
 
       if (!data.name) return alert('El nombre es obligatorio');
 
+      // Validar el costo antes de calcular el precio
+      const costError = validatePriceAmount(data.unitCost, 'Costo');
+      if (costError) return alert(costError);
+
       // Si no se especificó precio de venta, usar el sugerido
       if (data.salePrice === 0) {
-        data.salePrice = calcSuggestedPrice(data.unitCost, data.margin);
+        data.salePrice = calcSuggestedPriceCommercial(data.unitCost);
       }
 
       try {
