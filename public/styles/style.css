@@ -1816,3 +1816,63 @@ a {
     white-space: nowrap;
   }
 }
+
+/* =========================================================
+   DESGLOSE VISUAL DEL PRECIO SUGERIDO
+   ========================================================= */
+
+.price-breakdown {
+  margin-top: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-medium);
+  background: var(--color-surface);
+}
+
+.price-breakdown summary {
+  cursor: pointer;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  list-style: none;
+}
+
+.price-breakdown summary::-webkit-details-marker {
+  display: none;
+}
+
+.price-breakdown summary::marker {
+  content: '▾';
+}
+
+.price-breakdown[open] summary::marker {
+  content: '▴';
+}
+
+.price-breakdown-content {
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.price-breakdown-item {
+  background: var(--color-background);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-small);
+  padding: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.price-breakdown-item strong {
+  color: var(--color-text);
+}
+
+/* Modal breakdown */
+.price-breakdown#modal-price-breakdown {
+  margin-top: 0.75rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--color-border-light);
+  background: var(--color-background);
+}

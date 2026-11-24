@@ -9,7 +9,8 @@ import {
   calcSuggestedPriceCommercial,
   calcMargin,
   calcProfit,
-  formatCurrency
+  formatCurrency,
+  calcSuggestedPriceBreakdown
 } from '../services/pricing-service.js';
 import { validatePriceAmount } from '../utils/validators.js';
 
@@ -164,6 +165,34 @@ export default async function pricesView() {
     });
 
     html += `</tbody></table>`;
+
+    // Bloque colapsable con el desglose del precio sugerido
+    const breakdownHtml = products.map(p => {
+      let breakdown = null;
+      try {
+        breakdown = calcSuggestedPriceBreakdown(p.unitCost);
+      } catch (error) {
+        return `<div style="color:var(--color-danger); font-size:0.85rem;">${p.name}: costo inválido.</div>`;
+      }
+      return `
+        <div class="price-breakdown-item">
+          <strong>${p.name}</strong><br/>
+          Costo: ${formatCurrency(breakdown.costBase, config.currency)} × ${breakdown.multiplier} = ${formatCurrency(breakdown.intermediateValue, config.currency)}<br/>
+          Adición aplicada (${breakdown.costBase > breakdown.threshold ? 'costo > 7000' : 'costo ≤ 7000'}): ${formatCurrency(breakdown.fixedAdditionApplied, config.currency)}<br/>
+          <strong>Precio sugerido: ${formatCurrency(breakdown.suggestedPrice, config.currency)}</strong> — ${breakdown.formulaLabel}
+        </div>
+      `;
+    }).join('');
+
+    html += `
+      <details class="price-breakdown">
+        <summary>🔍 Ver cómo se calcula el precio sugerido de los productos</summary>
+        <div class="price-breakdown-content">
+          ${breakdownHtml || '<p>Sin productos para mostrar el desglose.</p>'}
+        </div>
+      </details>
+    `;
+
     list.innerHTML = html;
 
     // Eventos de editar y eliminar
@@ -232,6 +261,10 @@ export default async function pricesView() {
             <input type="number" id="p-sale" value="${product?.salePrice ?? 0}" min="0" step="0.01" />
           </div>
           <div class="suggested-preview" id="suggested-preview"></div>
+          <details class="price-breakdown" id="modal-price-breakdown" style="display:none;">
+            <summary>🔍 Desglose del precio sugerido</summary>
+            <div class="price-breakdown-content" id="modal-price-breakdown-content"></div>
+          </details>
           <div>
             <label>Stock</label>
             <input type="number" id="p-stock" value="${product?.stock ?? 0}" min="0" step="1" />
@@ -257,11 +290,26 @@ export default async function pricesView() {
 
     const updatePreview = () => {
       const c = Number(costInput.value);
+      const breakdownEl = modal.querySelector('#modal-price-breakdown');
+      const breakdownContent = modal.querySelector('#modal-price-breakdown-content');
       try {
         const suggested = calcSuggestedPriceCommercial(c);
         preview.textContent = `💡 Precio sugerido: ${formatCurrency(suggested, config.currency)}`;
+
+        const breakdown = calcSuggestedPriceBreakdown(c);
+        breakdownEl.style.display = 'block';
+        breakdownContent.innerHTML = `
+          <strong>Costo base:</strong> ${formatCurrency(breakdown.costBase, config.currency)}<br/>
+          <strong>Multiplicador:</strong> ×${breakdown.multiplier}<br/>
+          <strong>Valor intermedio:</strong> ${formatCurrency(breakdown.intermediateValue, config.currency)}<br/>
+          <strong>Adición aplicada:</strong> ${formatCurrency(breakdown.fixedAdditionApplied, config.currency)}<br/>
+          <strong>Precio sugerido:</strong> ${formatCurrency(breakdown.suggestedPrice, config.currency)}<br/>
+          <strong>Fórmula:</strong> ${breakdown.formulaLabel}
+        `;
       } catch (error) {
         preview.textContent = `⚠️ ${error.message}`;
+        breakdownEl.style.display = 'none';
+        breakdownContent.innerHTML = '';
       }
     };
     updatePreview();
