@@ -12,6 +12,9 @@ const routes = {
   '#settings': () => import('./views/settings.js'),
   '#metrics': () => import('./views/metrics.js'),
   '#sales': () => import('./views/sales.js'),
+  '#inventory': () => import('./views/inventory.js'),
+  '#materials': () => import('./views/materials.js'),
+  '#prices': () => import('./views/prices.js'),
 
 };
 

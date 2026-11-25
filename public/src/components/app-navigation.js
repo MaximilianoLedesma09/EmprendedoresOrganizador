@@ -54,6 +54,11 @@ export function createNavigation(activeRoute = '') {
         <span>Inventario</span>
       </a>
 
+      <a href="#materials" class="navigation-link ${activeRoute === '#materials' ? 'active' : ''}">
+        <span class="navigation-icon">🧵</span>
+        <span>Materiales</span>
+      </a>
+
       <a href="#prices" class="navigation-link ${activeRoute === '#prices' ? 'active' : ''}">
         <span class="navigation-icon">💰</span>
         <span>Precios</span>
