@@ -32,6 +32,12 @@ export const getBusinessConfig = async () => {
     businessType: 'revendedor', // 'fabricante' | 'revendedor'
     currency: 'ARS',
     defaultMargin: 30, // porcentaje
+    pricingConfig: {
+      multiplier: 2.30,
+      threshold: 7000,
+      fixedAdditionBelow: 1000,
+      fixedAdditionAbove: 1500,
+    },
   };
   await setDoc(ref, defaultConfig);
   return defaultConfig;
@@ -107,6 +113,27 @@ export const PRICING_DEFAULT = {
   fixedAdditionAbove: 1500,
 };
 
+// Configuración actual de precios (se sincroniza con Firestore).
+// Inicializada con los valores predeterminados y actualizada al cargar
+// la configuración del usuario.
+let currentPricingConfig = { ...PRICING_DEFAULT };
+
+// Establece la configuración de precios activa.
+//
+// Se invoca tras obtener la configuración del usuario desde Firestore
+// para que los cálculos de precio sugerido usen los valores personalizados.
+export const setPricingConfig = (config) => {
+  currentPricingConfig = {
+    multiplier: config?.multiplier ?? PRICING_DEFAULT.multiplier,
+    threshold: config?.threshold ?? PRICING_DEFAULT.threshold,
+    fixedAdditionBelow: config?.fixedAdditionBelow ?? PRICING_DEFAULT.fixedAdditionBelow,
+    fixedAdditionAbove: config?.fixedAdditionAbove ?? PRICING_DEFAULT.fixedAdditionAbove,
+  };
+};
+
+// Devuelve la configuración de precios actualmente activa.
+export const getPricingConfig = () => ({ ...currentPricingConfig });
+
 // Calcular precio sugerido comercial aplicando la fórmula aprobada.
 //
 // costoBase <= 7000:
@@ -123,10 +150,10 @@ export const calcSuggestedPriceCommercial = (costBase) => {
 
   const cost = Number(costBase);
 
-  const multiplier = PRICING_DEFAULT.multiplier;
-  const threshold = PRICING_DEFAULT.threshold;
-  const fixedAdditionBelow = PRICING_DEFAULT.fixedAdditionBelow;
-  const fixedAdditionAbove = PRICING_DEFAULT.fixedAdditionAbove;
+  const multiplier = currentPricingConfig.multiplier;
+  const threshold = currentPricingConfig.threshold;
+  const fixedAdditionBelow = currentPricingConfig.fixedAdditionBelow;
+  const fixedAdditionAbove = currentPricingConfig.fixedAdditionAbove;
 
   const intermediateValue = cost * multiplier;
 
@@ -152,10 +179,10 @@ export const calcSuggestedPriceBreakdown = (costBase) => {
 
   const cost = Number(costBase);
 
-  const multiplier = PRICING_DEFAULT.multiplier;
-  const threshold = PRICING_DEFAULT.threshold;
-  const fixedAdditionBelow = PRICING_DEFAULT.fixedAdditionBelow;
-  const fixedAdditionAbove = PRICING_DEFAULT.fixedAdditionAbove;
+  const multiplier = currentPricingConfig.multiplier;
+  const threshold = currentPricingConfig.threshold;
+  const fixedAdditionBelow = currentPricingConfig.fixedAdditionBelow;
+  const fixedAdditionAbove = currentPricingConfig.fixedAdditionAbove;
 
   const intermediateValue = cost * multiplier;
 
@@ -173,8 +200,8 @@ export const calcSuggestedPriceBreakdown = (costBase) => {
     suggestedPrice: Math.round(suggestedPrice * 100) / 100,
     formulaLabel:
       cost > threshold
-        ? 'costo > 7000 ? costo * 2.30 + 1500'
-        : 'costo <= 7000 ? costo * 2.30 + 1000',
+        ? `costo > ${threshold} ? costo * ${multiplier} + ${fixedAdditionAbove}`
+        : `costo <= ${threshold} ? costo * ${multiplier} + ${fixedAdditionBelow}`,
   };
 };
 

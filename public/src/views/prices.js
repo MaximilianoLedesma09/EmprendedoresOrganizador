@@ -2,6 +2,8 @@
 import {
   getBusinessConfig,
   saveBusinessConfig,
+  setPricingConfig,
+  PRICING_DEFAULT,
   getProducts,
   createProduct,
   updateProduct,
@@ -24,6 +26,7 @@ export default async function pricesView() {
   const render = async () => {
     try {
       config = await getBusinessConfig();
+      setPricingConfig(config.pricingConfig);
       products = await getProducts();
 
       container.innerHTML = `
@@ -47,6 +50,18 @@ export default async function pricesView() {
             <label>Margen por defecto (%):
               <input type="number" id="default-margin" value="${config.defaultMargin}" min="0" step="1" />
             </label>
+            <label>Multiplicador:
+              <input type="number" id="pricing-multiplier" value="${config.pricingConfig?.multiplier ?? PRICING_DEFAULT.multiplier}" min="0" step="0.01" />
+            </label>
+            <label>Umbral:
+              <input type="number" id="pricing-threshold" value="${config.pricingConfig?.threshold ?? PRICING_DEFAULT.threshold}" min="0" step="1" />
+            </label>
+            <label>Adición ≤ umbral:
+              <input type="number" id="pricing-addition-below" value="${config.pricingConfig?.fixedAdditionBelow ?? PRICING_DEFAULT.fixedAdditionBelow}" min="0" step="0.01" />
+            </label>
+            <label>Adición > umbral:
+              <input type="number" id="pricing-addition-above" value="${config.pricingConfig?.fixedAdditionAbove ?? PRICING_DEFAULT.fixedAdditionAbove}" min="0" step="0.01" />
+            </label>
             <button id="save-config-btn">Guardar configuración</button>
           </div>
         </div>
@@ -67,10 +82,17 @@ export default async function pricesView() {
         const newConfig = {
           businessType: container.querySelector('#business-type').value,
           currency: container.querySelector('#currency').value,
-          defaultMargin: Number(container.querySelector('#default-margin').value) || 0
+          defaultMargin: Number(container.querySelector('#default-margin').value) || 0,
+          pricingConfig: {
+            multiplier: Number(container.querySelector('#pricing-multiplier').value) || PRICING_DEFAULT.multiplier,
+            threshold: Number(container.querySelector('#pricing-threshold').value) || PRICING_DEFAULT.threshold,
+            fixedAdditionBelow: Number(container.querySelector('#pricing-addition-below').value) || PRICING_DEFAULT.fixedAdditionBelow,
+            fixedAdditionAbove: Number(container.querySelector('#pricing-addition-above').value) || PRICING_DEFAULT.fixedAdditionAbove,
+          },
         };
         await saveBusinessConfig(newConfig);
         config = newConfig;
+        setPricingConfig(config.pricingConfig);
         renderProductsList();
         alert('✅ Configuración guardada');
       });
