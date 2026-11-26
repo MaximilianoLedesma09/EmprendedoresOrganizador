@@ -9,6 +9,8 @@ import {
   getProducts
 } from '../services/inventory-service.js';
 
+import { getBusinessConfig } from '../services/pricing-service.js';
+
 
 export default function salesView() {
 
@@ -20,6 +22,7 @@ export default function salesView() {
 
 
   let products = [];
+  let config = null;
 
   let cart = [];
 

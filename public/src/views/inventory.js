@@ -7,6 +7,8 @@ import {
   deleteProduct
 } from '../services/inventory-service.js';
 
+import { getBusinessConfig } from '../services/pricing-service.js';
+
 
 export default function inventoryView() {
 
@@ -18,6 +20,7 @@ export default function inventoryView() {
 
 
   let products = [];
+  let config = null;
 
   let currentFilter = 'all';
 
@@ -161,6 +164,15 @@ export default function inventoryView() {
           return false;
         }
 
+        // Para revendedor, ocultar insumos (type === 'raw')
+        if (
+          config &&
+          config.businessType === 'revendedor' &&
+          product.type === 'raw'
+        ) {
+          return false;
+        }
+
 
         if (
           currentFilter === 'all'
@@ -187,6 +199,11 @@ export default function inventoryView() {
    */
 
   const render = async () => {
+    try {
+      config = await getBusinessConfig();
+    } catch {
+      config = { businessType: 'revendedor' };
+    }
 
     container.innerHTML = `
 
@@ -218,7 +235,7 @@ export default function inventoryView() {
             id="add-product-button"
             class="inventory-primary-button"
           >
-            ＋ Nuevo producto
+            ＋ Nuevo ${config.businessType === 'fabricante' ? 'insumo / producto' : 'producto'}
           </button>
 
         </header>
@@ -729,8 +746,13 @@ export default function inventoryView() {
 
   const updateSummary = () => {
 
+    const productsToCount = config &&
+      config.businessType === 'revendedor'
+      ? products.filter(p => p.type !== 'raw')
+      : products;
+
     const available =
-      products.filter(
+      productsToCount.filter(
         product =>
           getStockStatus(product).key ===
           'available'
@@ -738,7 +760,7 @@ export default function inventoryView() {
 
 
     const low =
-      products.filter(
+      productsToCount.filter(
         product =>
           getStockStatus(product).key ===
           'low'
@@ -746,7 +768,7 @@ export default function inventoryView() {
 
 
     const out =
-      products.filter(
+      productsToCount.filter(
         product =>
           getStockStatus(product).key ===
           'out'
@@ -756,7 +778,7 @@ export default function inventoryView() {
     container.querySelector(
       '#total-products'
     ).textContent =
-      products.length;
+      productsToCount.length;
 
 
     container.querySelector(
@@ -1546,7 +1568,13 @@ export default function inventoryView() {
           container.querySelector(
             '#product-price'
           ).value
-        ) || 0
+        ) || 0,
+
+      type:
+        config &&
+        config.businessType === 'revendedor'
+          ? 'product'
+          : 'product'
 
     };
 
